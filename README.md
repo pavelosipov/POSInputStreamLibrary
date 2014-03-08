@@ -34,8 +34,8 @@ subscribing to its events, but at the same time neither method of NSInputStream
 should be called from the main thread. The reason consists that `ALAssetLibrary`
 interacts with the client code in the main thread. Thus there will be a deadlock if
 `POSBlobInputStream` will wait the answer from `ALAssetLibrary` in a blocked main
-thread. Here is an example of `POSBlobInputStream` usage in a sync mode for calculating
-checksum of `ALAsset`.
+thread. Here is an example of `POSBlobInputStream` usage in a sync mode for
+calculating checksum of `ALAsset`.
 
 ```objective-c
 NSInputStream *stream = [NSInputStream pos_inputStreamWithAssetURL:assetURL asynchronous:NO];
@@ -43,6 +43,7 @@ dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
     [stream open];
     if ([stream streamStatus] == NSStreamStatusError) {
         // Error notification
+        [stream close];
         return;
     }
     NSParameterAssert([stream streamStatus] == NSStreamStatusOpen);
@@ -51,15 +52,80 @@ dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         const NSInteger readCount = [stream read:buffer maxLength:kBufferSize];
         if (readCount < 0) {
             // Error notification
-            return;
+            break;
         } else {
             // Checksum update
         }
     }
     if ([stream streamStatus] != NSStreamStatusAtEnd) {
         // Error notification
-        return;
     }
     [stream close];
 }
 ```
+
+### Asynchronous
+
+In async mode all methods of `POSBlobInputStream` returning immediately after call.
+Client code should provide a delegate to the stream to receive information about its
+status. This is the only way to know when the stream opened, when it has data to read
+and about errors. You can see async version of checksum calculation below.
+
+```objective-c
+@interface ChecksumCalculator () <NSStreamDelegate>
+@end
+
+@implementation ChecksumCalculator
+
+- (void)calculateChecksumForStream:(NSInputStream *)aStream {
+    aStream.delegate = self;
+    [aStream open];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{ @autoreleasepool {
+        NSRunLoop *runLoop = [NSRunLoop currentRunLoop];
+        [aStream scheduleInRunLoop:runLoop forMode:NSDefaultRunLoopMode];
+        for (;;) { @autoreleasepool {
+            if (![runLoop runMode:NSDefaultRunLoopMode
+                       beforeDate:[NSDate dateWithTimeIntervalSinceNow:kRunLoopInterval]]) {
+                break;
+            }
+            const NSStreamStatus streamStatus = [aStream streamStatus];
+            if (streamStatus == NSStreamStatusError || streamStatus == NSStreamStatusClosed) {
+                    break;
+            }
+        }}
+    }});
+}
+
+#pragma mark - NSStreamDelegate
+
+- (void)stream:(NSStream *)aStream handleEvent:(NSStreamEvent)eventCode {
+    switch (eventCode) {
+        case NSStreamEventHasBytesAvailable: {
+            [self updateChecksumForStream:aStream];
+        } break;
+        case NSStreamEventEndEncountered: {
+            [self notifyChecksumCalculationCompleted];
+            [aStream close];
+        } break;
+        case NSStreamEventErrorOccurred: {
+            [self notifyErrorOccurred:[aStream streamError]];
+            [aStream close];
+        } break;
+    }
+}
+
+@end
+```
+
+## Integrating with NSURLRequest
+
+`POSBlobInputStream` provides `pos_inputStreamForCFNetworkWithAssetURL` initializer
+for NSURLRequest integration. It takes in mind the following CFNetwork "features":
+
+- CFNetwork works with a stream in a sync mode. 
+- CFNetowrk uses deprecated `CFReadStreamGetError` method to get error description from
+the stream. This action will crash the app because of the bug in a "toll-free bridging"
+implementation for NSInputStream. This is the reason why `streamStatus` method will never
+return `NSStreamStatusError`. More over, `POSBlobInputStream` will not notify about its
+status change via C-callbacks. The only way to receive actual status of the stream is via
+`NSStreamDelagate` callback.
