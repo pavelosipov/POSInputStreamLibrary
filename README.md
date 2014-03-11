@@ -28,12 +28,12 @@ ALAssetLibrary for `ALAsset` during the opening.
 ### Synchronous
 
 In sync mode all methods of `POSInputStream` completely perform their work during
-the call. If it will be necessary to obtain some data from `ALAssetLibrary` the
-calling thread will be blocked. This make it possible to work with a stream without
+the call. If it is necessary to obtain some data from `ALAssetLibrary` the
+calling thread will be blocked. This makes possible to work with a stream without
 subscribing to its events, but at the same time neither method of NSInputStream
-should be called from the main thread. The reason consists that `ALAssetLibrary`
+should be called from the main thread. The reason is that `ALAssetLibrary`
 interacts with the client code in the main thread. Thus there will be a deadlock if
-`POSBlobInputStream` will wait the answer from `ALAssetLibrary` in a blocked main
+`POSBlobInputStream` waits the answer from `ALAssetLibrary` in a blocked main
 thread. Here is an example of `POSBlobInputStream` usage in a sync mode for
 calculating checksum of `ALAsset`.
 
@@ -66,7 +66,7 @@ dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
 
 ### Asynchronous
 
-In async mode all methods of `POSBlobInputStream` returning immediately after call.
+In async mode all methods of `POSBlobInputStream` return immediately after call.
 Client code should provide a delegate to the stream to receive information about its
 status. This is the only way to know when the stream opened, when it has data to read
 and about errors. You can see async version of checksum calculation below.
@@ -120,7 +120,7 @@ and about errors. You can see async version of checksum calculation below.
 ## Integrating with NSURLRequest
 
 `POSBlobInputStream` provides `pos_inputStreamForCFNetworkWithAssetURL` initializer
-for NSURLRequest integration. It takes in mind the following CFNetwork "features":
+for NSURLRequest integration. It takes into account the following CFNetwork "features":
 
 - CFNetwork works with a stream in a sync mode. 
 - CFNetowrk uses deprecated `CFReadStreamGetError` method to get error description from
