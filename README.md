@@ -51,7 +51,6 @@ dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         uint8_t buffer[kBufferSize];
         const NSInteger readCount = [stream read:buffer maxLength:kBufferSize];
         if (readCount < 0) {
-            // Error notification
             break;
         } else {
             // Checksum update
