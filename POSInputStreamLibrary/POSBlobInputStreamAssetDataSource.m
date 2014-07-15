@@ -12,7 +12,6 @@ typedef long long POSLength;
 
 NSString * const POSBlobInputStreamAssetDataSourceErrorDomain = @"com.github.pavelosipov.POSBlobInputStreamAssetDataSource";
 
-static NSInteger const kOperationFailedReturnCode = -1;
 static uint64_t const kAssetCacheBufferSize = 131072;
 
 typedef NS_ENUM(NSInteger, UpdateCacheMode) {
