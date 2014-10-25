@@ -1,5 +1,6 @@
 NSInputStream for ALAsset
 =========================
+[![Version](http://img.shields.io/cocoapods/v/POSInputStreamLibrary.svg)](http://cocoapods.org/?q=POSInputStreamLibrary)
 
 POSInputStreamLibrary contains `NSInputStream` implementation which uses `ALAsset`
 as its data source. The main features of `POSBlobInputStream` are the following:
@@ -128,3 +129,7 @@ implementation for NSInputStream. This is the reason why `streamStatus` method w
 return `NSStreamStatusError`. More over, `POSBlobInputStream` will not notify about its
 status change via C-callbacks. The only way to receive actual status of the stream is via
 `NSStreamDelagate` callback.
+
+## Resources
+
+* [How POSInputStreamLibrary was born inside Cloud Mail.Ru iOS Team (RU)](http://habr.ru/p/216247/)
