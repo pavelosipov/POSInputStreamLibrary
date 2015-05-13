@@ -9,5 +9,6 @@ Pod::Spec.new do |s|
   s.platform     = :ios, '7.0'
   s.requires_arc = true
   s.source_files = 'POSInputStreamLibrary/*.{h,m}'
-  s.frameworks   = 'Foundation', 'AssetsLibrary', 'UIKit', 'ImageIO', 'Photos'
+  s.frameworks   = 'Foundation', 'AssetsLibrary', 'UIKit', 'ImageIO'
+  s.weak_framework = 'Photos'
 end
