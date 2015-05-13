@@ -9,6 +9,8 @@ as its data source. The main features of `POSBlobInputStream` are the following:
 - Autorefresh after `ALAsset` invalidation.
 - Smart caching of `ALAsset` while reading its data.
 - Using `NSStreamFileCurrentOffsetKey` property for read offset specification.
+- Autorecovery after ALAssetRepresentation invalidation.
+- Adjustment filters detection and applying for both iOS 7 and iOS 8 (new in 2.0.0).
 
 The category for `NSInputStream` defines initializers for the most common cases:
 

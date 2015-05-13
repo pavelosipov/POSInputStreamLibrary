@@ -1,110 +1,50 @@
 //
 //  POSBlobInputStreamAssetDataSource.m
-//  POSBlobInputStreamLibrary
+//  POSInputStreamLibrary
 //
-//  Created by Pavel Osipov on 16.07.13.
-//  Copyright (c) 2013 Pavel Osipov. All rights reserved.
+//  Created by Osipov on 06.05.15.
+//  Copyright (c) 2015 Pavel Osipov. All rights reserved.
 //
 
 #import "POSBlobInputStreamAssetDataSource.h"
+#import "POSFastAssetReader.h"
+#import "POSAdjustedAssetReaderIOS7.h"
+#import "POSAdjustedAssetReaderIOS8.h"
+#import "POSLocking.h"
 
-typedef long long POSLength;
+#import <MobileCoreServices/MobileCoreServices.h>
+#import <UIKit/UIKit.h>
 
 NSString * const POSBlobInputStreamAssetDataSourceErrorDomain = @"com.github.pavelosipov.POSBlobInputStreamAssetDataSource";
 
-static uint64_t const kAssetCacheBufferSize = 131072;
+NSInteger const kPOSReadFailureReturnCode = -1;
 
-typedef NS_ENUM(NSInteger, UpdateCacheMode) {
-    UpdateCacheModeReopenWhenError,
-    UpdateCacheModeFailWhenError
+typedef NS_ENUM(int, ResetMode) {
+    ResetModeReopenWhenError,
+    ResetModeFailWhenError
 };
 
-#pragma mark - Locking
-
-@protocol Locking <NSLocking>
-- (BOOL)waitWithTimeout:(dispatch_time_t)timeout;
-@end
-
-@interface GCDLock : NSObject <Locking>
-@end
-
-@implementation GCDLock {
-    dispatch_semaphore_t semaphore_;
-}
-
-- (void)lock {
-    semaphore_ = dispatch_semaphore_create(0);
-}
-
-- (void)unlock {
-    dispatch_semaphore_signal(semaphore_);
-}
-
-- (BOOL)waitWithTimeout:(dispatch_time_t)timeout {
-    return dispatch_semaphore_wait(semaphore_, timeout) == 0;
-}
-
-@end
-
-@interface DummyLock : NSObject <Locking>
-@end
-
-@implementation DummyLock
-- (void)lock {}
-- (void)unlock {}
-- (BOOL)waitWithTimeout:(dispatch_time_t)timeout { return YES; }
-@end
-
-#pragma mark - NSError (POSBlobInputStreamAssetDataSource)
-
 @interface NSError (POSBlobInputStreamAssetDataSource)
-+ (NSError *)pos_assetOpenError;
++ (NSError *)pos_assetOpenErrorWithURL:(NSURL *)assetURL reason:(NSError *)reason;
++ (NSError *)pos_assetReadErrorWithURL:(NSURL *)assetURL reason:(NSError *)reason;
 @end
-
-@implementation NSError (POSBlobInputStreamAssetDataSource)
-
-+ (NSError *)pos_assetOpenError {
-    NSDictionary *userInfo = @{ NSLocalizedDescriptionKey : @"Failed to open ALAsset stream." };
-    return [NSError errorWithDomain:POSBlobInputStreamAssetDataSourceErrorDomain
-                               code:POSBlobInputStreamAssetDataSourceErrorCodeOpen
-                           userInfo:userInfo];
-}
-
-+ (NSError *)pos_assetReadErrorWithURL:(NSURL *)assetURL reason:(NSError *)reason {
-    NSString *description = [NSString stringWithFormat:@"Failed to read asset with URL %@", assetURL];
-    if (reason) {
-        return [NSError errorWithDomain:POSBlobInputStreamAssetDataSourceErrorDomain
-                                   code:POSBlobInputStreamAssetDataSourceErrorCodeRead
-                               userInfo:@{ NSLocalizedDescriptionKey: description, NSUnderlyingErrorKey: reason }];
-    } else {
-        return [NSError errorWithDomain:POSBlobInputStreamAssetDataSourceErrorDomain
-                                   code:POSBlobInputStreamAssetDataSourceErrorCodeRead
-                               userInfo:@{ NSLocalizedDescriptionKey: description }];
-    }
-}
-
-@end
-
-#pragma mark - POSBlobInputStreamAssetDataSource
 
 @interface POSBlobInputStreamAssetDataSource ()
-@property (nonatomic, readwrite) NSError *error;
+@property (nonatomic) NSError *error;
+@property (nonatomic) NSURL *assetURL;
+@property (nonatomic) ALAssetsLibrary *assetsLibrary;
+@property (nonatomic) ALAsset *asset;
+@property (nonatomic) ALAssetRepresentation *assetRepresentation;
+@property (nonatomic) POSLength assetSize;
+@property (nonatomic) id<POSAssetReader> assetReader;
+@property (nonatomic) POSLength readOffset;
 @end
 
 @implementation POSBlobInputStreamAssetDataSource {
-    NSURL *_assetURL;
-    ALAsset *_asset;
-    ALAssetsLibrary *_assetsLibrary;
-    ALAssetRepresentation *_assetRepresentation;
-    POSLength _assetSize;
-    POSLength _readOffset;
-    uint8_t _assetCache[kAssetCacheBufferSize];
-    POSLength _assetCacheSize;
-    POSLength _assetCacheOffset;
-    POSLength _assetCacheInternalOffset;
 }
-
 @dynamic openCompleted, hasBytesAvailable, atEnd;
+
+#pragma mark - Lifecycle
 
 - (id)init {
     @throw [NSException exceptionWithName:NSInternalInconsistencyException
@@ -114,14 +54,13 @@ typedef NS_ENUM(NSInteger, UpdateCacheMode) {
                                  userInfo:nil];
 }
 
-- (id)initWithAssetURL:(NSURL *)assetURL {
+- (instancetype)initWithAssetURL:(NSURL *)assetURL {
     NSParameterAssert(assetURL);
     if (self = [super init]) {
         _openSynchronously = NO;
         _assetURL = assetURL;
-        _assetCacheSize = 0;
-        _assetCacheOffset = 0;
-        _assetCacheInternalOffset = 0;
+        _adjustedJPEGCompressionQuality = .93f;
+        _adjustedImageMaximumSize = 1024 * 1024;
     }
     return self;
 }
@@ -129,7 +68,7 @@ typedef NS_ENUM(NSInteger, UpdateCacheMode) {
 #pragma mark - POSBlobInputStreamDataSource
 
 - (BOOL)isOpenCompleted {
-    return _assetRepresentation != nil;
+    return _assetSize > 0;
 }
 
 - (void)open {
@@ -138,8 +77,19 @@ typedef NS_ENUM(NSInteger, UpdateCacheMode) {
     }
 }
 
+- (void)setAssetSize:(POSLength)assetSize {
+    const BOOL shouldEmitOpenCompletedEvent = ![self isOpenCompleted];
+    if (shouldEmitOpenCompletedEvent) {
+        [self willChangeValueForKey:POSBlobInputStreamDataSourceOpenCompletedKeyPath];
+    }
+    _assetSize = assetSize;
+    if (shouldEmitOpenCompletedEvent) {
+        [self didChangeValueForKey:POSBlobInputStreamDataSourceOpenCompletedKeyPath];
+    }
+}
+
 - (BOOL)hasBytesAvailable {
-    return [self p_availableBytesCount] > 0;
+    return [_assetReader hasBytesAvailableFromOffset:_readOffset];
 }
 
 - (BOOL)isAtEnd {
@@ -165,10 +115,14 @@ typedef NS_ENUM(NSInteger, UpdateCacheMode) {
         return NO;
     }
     _readOffset = requestedOffest;
-    if ([self isOpenCompleted]) {
-        [self p_updateCacheInMode:UpdateCacheModeReopenWhenError];
+    if (_assetReader) {
+        return [_assetReader prepareForNewOffset:_readOffset];
     }
     return YES;
+}
+
+- (BOOL)getBuffer:(uint8_t **)buffer length:(NSUInteger *)bufferLength {
+    return NO;
 }
 
 - (NSInteger)read:(uint8_t *)buffer maxLength:(NSUInteger)maxLength {
@@ -177,9 +131,11 @@ typedef NS_ENUM(NSInteger, UpdateCacheMode) {
     if (self.atEnd) {
         return 0;
     }
-    const POSLength readResult = MIN(maxLength, [self p_availableBytesCount]);
-    memcpy(buffer, _assetCache + _assetCacheInternalOffset, (unsigned long)readResult);
-    _assetCacheInternalOffset += readResult;
+    NSError *error;
+    const POSLength readResult = [_assetReader read:buffer
+                                         fromOffset:_readOffset
+                                          maxLength:maxLength
+                                              error:&error];
     const POSLength readOffset = _readOffset + readResult;
     NSParameterAssert(readOffset <= _assetSize);
     const BOOL atEnd = readOffset >= _assetSize;
@@ -189,84 +145,104 @@ typedef NS_ENUM(NSInteger, UpdateCacheMode) {
     _readOffset = readOffset;
     if (atEnd) {
         [self didChangeValueForKey:POSBlobInputStreamDataSourceAtEndKeyPath];
-    } else if (![self hasBytesAvailable]) {
-        [self p_updateCacheInMode:UpdateCacheModeReopenWhenError];
+    } else if (error) {
+        [self p_open];
     }
     return (NSInteger)readResult;
 }
 
-- (BOOL)getBuffer:(uint8_t **)buffer length:(NSUInteger *)bufferLength {
-    return NO;
-}
-
-#pragma mark - POSBlobInputStreamDataSource Private
+#pragma mark - Private
 
 - (void)p_open {
-    id<Locking> lock = [self p_lockForOpening];
+    id<POSLocking> lock = [self p_lockForOpening];
     [lock lock];
     dispatch_async(dispatch_get_main_queue(), ^{ @autoreleasepool {
-        _assetsLibrary = [[ALAssetsLibrary alloc] init];
+        self.assetsLibrary = [ALAssetsLibrary new];
         [_assetsLibrary assetForURL:_assetURL resultBlock:^(ALAsset *asset) {
             ALAssetRepresentation *assetRepresentation = [asset defaultRepresentation];
             if (assetRepresentation != nil) {
-                [self p_updateAsset:asset withAssetRepresentation:assetRepresentation];
-                [self p_updateCacheInMode:UpdateCacheModeFailWhenError];
+                self.asset = asset;
+                self.assetRepresentation = assetRepresentation;
+                self.assetReader = [self p_assetReaderForAssetRepresentation:assetRepresentation];
+                [_assetReader openAsset:assetRepresentation
+                             fromOffset:_readOffset
+                      completionHandler:^(POSLength assetSize, NSError *error) {
+                    if (error != nil || assetSize <= 0 || (_assetSize != 0 && _assetSize != assetSize)) {
+                        self.error = [NSError pos_assetOpenErrorWithURL:_assetURL reason:error];
+                    } else {
+                        self.assetSize = assetSize;
+                    }
+                    [lock unlock];
+                }];
             } else {
-                [self setError:[NSError pos_assetOpenError]];
+                self.error = [NSError pos_assetOpenErrorWithURL:_assetURL reason:nil];
+                [lock unlock];
             }
-            [lock unlock];
         } failureBlock:^(NSError *error) {
-            [self setError:[NSError pos_assetOpenError]];
+            self.error = [NSError pos_assetOpenErrorWithURL:_assetURL reason:error];
             [lock unlock];
         }];
     }});
     [lock waitWithTimeout:DISPATCH_TIME_FOREVER];
 }
 
-- (void)p_updateAsset:(ALAsset *)asset withAssetRepresentation:(ALAssetRepresentation *)assetRepresentation {
-    const BOOL shouldEmitOpenCompletedEvent = ![self isOpenCompleted];
-    if (shouldEmitOpenCompletedEvent) [self willChangeValueForKey:POSBlobInputStreamDataSourceOpenCompletedKeyPath];
-    _asset = asset;
-    _assetRepresentation = assetRepresentation;
-    _assetSize = [assetRepresentation size];
-    if (shouldEmitOpenCompletedEvent) [self didChangeValueForKey:POSBlobInputStreamDataSourceOpenCompletedKeyPath];
+- (id<POSAssetReader>)p_assetReaderForAssetRepresentation:(ALAssetRepresentation *)representation {
+    if (_assetReader) {
+        return _assetReader;
+    }
+    if (!UTTypeConformsTo((__bridge CFStringRef)representation.UTI, kUTTypeImage)) {
+        return [POSFastAssetReader new];
+    }
+    if ([UIDevice currentDevice].systemVersion.floatValue >= 8.0 &&
+        representation.size <= _adjustedImageMaximumSize) {
+        return [POSAdjustedAssetReaderIOS8 new];
+    }
+    if (representation.metadata[@"AdjustmentXMP"] != nil) {
+        POSAdjustedAssetReaderIOS7 *assetReader = [POSAdjustedAssetReaderIOS7 new];
+        assetReader.JPEGCompressionQuality = _adjustedJPEGCompressionQuality;
+        return assetReader;
+    }
+    return [POSFastAssetReader new];
 }
 
-- (void)p_updateCacheInMode:(UpdateCacheMode)mode {
-    NSError *readError = nil;
-    const NSUInteger readResult = [_assetRepresentation getBytes:_assetCache
-                                                      fromOffset:_readOffset
-                                                          length:kAssetCacheBufferSize
-                                                           error:&readError];
-    if (readResult > 0) {
-        [self willChangeValueForKey:POSBlobInputStreamDataSourceHasBytesAvailableKeyPath];
-        _assetCacheSize = readResult;
-        _assetCacheOffset = _readOffset;
-        _assetCacheInternalOffset = 0;
-        [self didChangeValueForKey:POSBlobInputStreamDataSourceHasBytesAvailableKeyPath];
+- (id<POSLocking>)p_lockForOpening {
+    if ([self shouldOpenSynchronously]) {
+        // If you want open stream synchronously you should
+        // do that in some worker thread to avoid deadlock.
+        NSParameterAssert(![[NSThread currentThread] isMainThread]);
+        return [POSGCDLock new];
     } else {
-        switch (mode) {
-            case UpdateCacheModeReopenWhenError: {
-                [self p_open];
-            } break;
-            case UpdateCacheModeFailWhenError: {
-                [self setError:[NSError pos_assetReadErrorWithURL:_assetURL reason:readError]];
-            } break;
-        }
+        return [POSDummyLock new];
     }
 }
 
-- (POSLength)p_availableBytesCount {
-    return _assetCacheSize - _assetCacheInternalOffset;
+@end
+
+@implementation NSError (POSBlobInputStreamAssetDataSource)
+
++ (NSError *)pos_assetOpenErrorWithURL:(NSURL *)assetURL reason:(NSError *)reason {
+    NSString *description = [NSString stringWithFormat:@"Failed to open asset with URL %@", assetURL];
+    if (reason) {
+        return [NSError errorWithDomain:POSBlobInputStreamAssetDataSourceErrorDomain
+                                   code:POSBlobInputStreamAssetDataSourceErrorCodeOpen
+                               userInfo:@{ NSLocalizedDescriptionKey: description, NSUnderlyingErrorKey: reason }];
+    } else {
+        return [NSError errorWithDomain:POSBlobInputStreamAssetDataSourceErrorDomain
+                                   code:POSBlobInputStreamAssetDataSourceErrorCodeOpen
+                               userInfo:@{ NSLocalizedDescriptionKey: description }];
+    }
 }
 
-- (id<Locking>)p_lockForOpening {
-    if ([self shouldOpenSynchronously]) {
-        // If you want open stream synchronously you should do that in some worker thread to avoid deadlock.
-        NSParameterAssert(![[NSThread currentThread] isMainThread]);
-        return [GCDLock new];
++ (NSError *)pos_assetReadErrorWithURL:(NSURL *)assetURL reason:(NSError *)reason {
+    NSString *description = [NSString stringWithFormat:@"Failed to read asset with URL %@", assetURL];
+    if (reason) {
+        return [NSError errorWithDomain:POSBlobInputStreamAssetDataSourceErrorDomain
+                                   code:POSBlobInputStreamAssetDataSourceErrorCodeRead
+                               userInfo:@{ NSLocalizedDescriptionKey: description, NSUnderlyingErrorKey: reason }];
     } else {
-        return [DummyLock new];
+        return [NSError errorWithDomain:POSBlobInputStreamAssetDataSourceErrorDomain
+                                   code:POSBlobInputStreamAssetDataSourceErrorCodeRead
+                               userInfo:@{ NSLocalizedDescriptionKey: description }];
     }
 }
 
