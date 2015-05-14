@@ -54,6 +54,8 @@ typedef NS_ENUM(NSInteger, POSBlobInputStreamAssetDataSourceErrorCode) {
                 is the app will consume much more RAM, because instead of streaming
                 asset directly from ALAssetsLibrary it will allocate RAM for the whole
                 UIImage at once.
+ 
+    @remarks See comments in POSAdjustedAssetReaderIOS8.h for more info.
  */
 @property (nonatomic, assign) long long adjustedImageMaximumSize;
 

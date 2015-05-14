@@ -15,6 +15,13 @@
 
 @implementation POSAdjustedAssetReaderIOS8
 
+- (instancetype)init {
+    if (self = [super init]) {
+        _suspiciousSize = LONG_LONG_MAX;
+    }
+    return self;
+}
+
 #pragma mark - POSAssetReader
 
 - (void)openAsset:(ALAssetRepresentation *)assetRepresentation
@@ -26,9 +33,16 @@ completionHandler:(void (^)(POSLength assetSize, NSError *error))completionHandl
         completionHandler(0, error);
         return;
     }
-    [self p_fetchAssetDataForAsset:asset completionBlock:^(NSData *assetData, NSError *error) {
+    void (^openCompletionBlock)(NSData *, NSError *) = ^void(NSData *assetData, NSError *error) {
         self.imageData = assetData;
         completionHandler([_imageData length], error);
+    };
+    [self p_fetchAssetDataForAsset:asset completionBlock:^(NSData *assetData, NSError *error) {
+        if ([assetData length] <= _suspiciousSize) {
+            [self p_fetchAssetDataForAsset:asset completionBlock:openCompletionBlock];
+        } else {
+            openCompletionBlock(assetData, error);
+        }
     }];
 }
 

@@ -195,7 +195,9 @@ typedef NS_ENUM(int, ResetMode) {
     }
     if ([UIDevice currentDevice].systemVersion.floatValue >= 8.0 &&
         representation.size <= _adjustedImageMaximumSize) {
-        return [POSAdjustedAssetReaderIOS8 new];
+        POSAdjustedAssetReaderIOS8 *assetReader = [POSAdjustedAssetReaderIOS8 new];
+        assetReader.suspiciousSize = _adjustedImageMaximumSize;
+        return assetReader;
     }
     if (representation.metadata[@"AdjustmentXMP"] != nil) {
         POSAdjustedAssetReaderIOS7 *assetReader = [POSAdjustedAssetReaderIOS7 new];
