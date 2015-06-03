@@ -123,16 +123,7 @@ completionHandler:(void (^)(POSLength assetSize, NSError *error))completionHandl
         [filter setValue:image forKey:kCIInputImageKey];
         image = [filter outputImage];
     }
-    // Trying to use hardware to apply filters
-    EAGLContext *hardwareContext = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
-    CIContext *context = [CIContext contextWithEAGLContext:hardwareContext
-                                                   options:@{ kCIContextWorkingColorSpace : [NSNull null] }];
-    CGSize GPUImageSize = [context inputImageMaximumSize];
-    if ((GPUImageSize.width < CGImageGetWidth(fullResolutionImage)) ||
-        (GPUImageSize.height < CGImageGetHeight(fullResolutionImage))) {
-        // Hardware renderer is not available, so we'll use software rendering
-        context = [CIContext contextWithOptions:@{ kCIContextUseSoftwareRenderer : @YES }];
-    }
+    CIContext *context = [CIContext contextWithOptions:@{ kCIContextUseSoftwareRenderer : @YES }];
     CGImageRef renderedImage = [context createCGImage:image fromRect:[image extent]];
     UIImage *resultImage = [UIImage imageWithCGImage:(renderedImage ? renderedImage : fullResolutionImage)
                                                scale:[assetRepresentation scale]
