@@ -16,7 +16,10 @@
 @property (nonatomic) NSData *imageData;
 @end
 
-@implementation POSAdjustedAssetReaderIOS7
+@implementation POSAdjustedAssetReaderIOS7 {
+    NSData *_imageData;
+}
+@dynamic imageData;
 
 - (instancetype)init {
     if (self = [super init]) {
@@ -25,28 +28,46 @@
     return self;
 }
 
+#pragma mark - Properties
+
+- (NSData *)imageData {
+    @synchronized(self) {
+        return _imageData;
+    }
+}
+
+- (void)setImageData:(NSData *)imageData {
+    @synchronized(self) {
+        _imageData = imageData;
+    }
+}
+
 #pragma mark - POSAssetReader
 
 - (void)openAsset:(ALAssetRepresentation *)assetRepresentation
        fromOffset:(POSLength)offset
 completionHandler:(void (^)(POSLength assetSize, NSError *error))completionHandler {
-    NSError *error;
-    UIImage *image = [self p_adjustedImageDataFromAssetRepresentation:assetRepresentation error:&error];
-    if (!image) {
-        completionHandler(0, error);
-        return;
-    }
-    NSData *imageData = [self p_dataFromImage:image withUTI:assetRepresentation.UTI error:&error];
-    if (!imageData) {
-        completionHandler(0, error);
-        return;
-    }
-    self.imageData = [self p_dataForImageData:imageData withMetadata:assetRepresentation.metadata error:&error];
-    completionHandler([_imageData length], error);
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), ^{
+        NSError *error;
+        @autoreleasepool {
+            UIImage *image = [self p_adjustedImageDataFromAssetRepresentation:assetRepresentation error:&error];
+            if (image) {
+                NSData *imageData = [self p_dataFromImage:image withUTI:assetRepresentation.UTI error:&error];
+                if (imageData) {
+                    self.imageData = [self p_dataForImageData:imageData
+                                                 withMetadata:assetRepresentation.metadata
+                                                        error:&error];
+                }
+            }
+        }
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completionHandler(self.imageData.length, error);
+        });
+    });
 }
 
 - (BOOL)hasBytesAvailableFromOffset:(POSLength)offset {
-    return [_imageData length] - offset > 0;;
+    return self.imageData.length - offset > 0;
 }
 
 - (BOOL)prepareForNewOffset:(POSLength)offset {
@@ -57,12 +78,13 @@ completionHandler:(void (^)(POSLength assetSize, NSError *error))completionHandl
        fromOffset:(POSLength)offset
         maxLength:(NSUInteger)maxLength
             error:(NSError **)error {
-    const POSLength readResult = MIN(maxLength, MAX([_imageData length] - offset, 0));
+    NSData *imageData = self.imageData;
+    const POSLength readResult = MIN(maxLength, MAX(imageData.length - offset, 0));
     NSRange dataRange = (NSRange){
         .location = (NSUInteger)offset,
         .length = (NSUInteger)readResult
     };
-    [_imageData getBytes:buffer range:dataRange];
+    [imageData getBytes:buffer range:dataRange];
     return (NSInteger)readResult;
 }
 
@@ -107,7 +129,7 @@ completionHandler:(void (^)(POSLength assetSize, NSError *error))completionHandl
     NSData *xmpData = [xmpString dataUsingEncoding:NSUTF8StringEncoding];
     CGImageRef fullResolutionImage = [assetRepresentation fullResolutionImage];
     if (!fullResolutionImage) {
-        *error = [NSError errorWithDomain:POSBlobInputStreamAssetDataSourceErrorDomain code:121 userInfo:@{
+        *error = [NSError errorWithDomain:POSBlobInputStreamAssetDataSourceErrorDomain code:111 userInfo:@{
             NSLocalizedDescriptionKey: @"Failed to get source image for rendering."
         }];
         return nil;
@@ -128,7 +150,9 @@ completionHandler:(void (^)(POSLength assetSize, NSError *error))completionHandl
     UIImage *resultImage = [UIImage imageWithCGImage:(renderedImage ? renderedImage : fullResolutionImage)
                                                scale:[assetRepresentation scale]
                                          orientation:(UIImageOrientation)[assetRepresentation orientation]];
-    CFRelease(renderedImage);
+    if (renderedImage) {
+        CGImageRelease(renderedImage);
+    }
     return resultImage;
 }
 
