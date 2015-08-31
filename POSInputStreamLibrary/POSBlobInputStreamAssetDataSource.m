@@ -174,9 +174,11 @@ typedef NS_ENUM(int, ResetMode) {
                      } else {
                          self.assetSize = assetSize;
                      }
+                     [lock unlock];
                  }];
             } else {
                 self.error = [NSError pos_assetOpenErrorWithURL:_assetURL reason:nil];
+                [lock unlock];
             }
         } failureBlock:^(NSError *error) {
             self.error = [NSError pos_assetOpenErrorWithURL:_assetURL reason:error];
