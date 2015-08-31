@@ -23,6 +23,7 @@
 		21AF30121B1F2FC800531F38 /* POSBlobInputStreamAssetDataSource.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AF30071B1F2FC800531F38 /* POSBlobInputStreamAssetDataSource.m */; };
 		21AF30131B1F2FC800531F38 /* POSFastAssetReader.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AF300A1B1F2FC800531F38 /* POSFastAssetReader.m */; };
 		21AF30141B1F2FC800531F38 /* POSLocking.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AF300D1B1F2FC800531F38 /* POSLocking.m */; };
+		21B9079A1B9487F400666D28 /* ALAssetsLibrary+POS.m in Sources */ = {isa = PBXBuildFile; fileRef = 21B907991B9487F400666D28 /* ALAssetsLibrary+POS.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -82,6 +83,8 @@
 		21AF300B1B1F2FC800531F38 /* POSInputStreamLibrary.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = POSInputStreamLibrary.h; sourceTree = "<group>"; };
 		21AF300C1B1F2FC800531F38 /* POSLocking.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = POSLocking.h; sourceTree = "<group>"; };
 		21AF300D1B1F2FC800531F38 /* POSLocking.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = POSLocking.m; sourceTree = "<group>"; };
+		21B907981B9487F400666D28 /* ALAssetsLibrary+POS.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "ALAssetsLibrary+POS.h"; sourceTree = "<group>"; };
+		21B907991B9487F400666D28 /* ALAssetsLibrary+POS.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "ALAssetsLibrary+POS.m"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -138,6 +141,8 @@
 		219AA09818BF78A4000B68AB /* POSInputStreamLibrary */ = {
 			isa = PBXGroup;
 			children = (
+				21B907981B9487F400666D28 /* ALAssetsLibrary+POS.h */,
+				21B907991B9487F400666D28 /* ALAssetsLibrary+POS.m */,
 				21AF2FFD1B1F2FC800531F38 /* NSInputStream+POS.h */,
 				21AF2FFE1B1F2FC800531F38 /* NSInputStream+POS.m */,
 				21AF2FFF1B1F2FC800531F38 /* POSAdjustedAssetReaderIOS7.h */,
@@ -293,6 +298,7 @@
 			files = (
 				21AF30141B1F2FC800531F38 /* POSLocking.m in Sources */,
 				21AF30131B1F2FC800531F38 /* POSFastAssetReader.m in Sources */,
+				21B9079A1B9487F400666D28 /* ALAssetsLibrary+POS.m in Sources */,
 				21AF30121B1F2FC800531F38 /* POSBlobInputStreamAssetDataSource.m in Sources */,
 				21AF30111B1F2FC800531F38 /* POSBlobInputStream.m in Sources */,
 				21AF300F1B1F2FC800531F38 /* POSAdjustedAssetReaderIOS7.m in Sources */,

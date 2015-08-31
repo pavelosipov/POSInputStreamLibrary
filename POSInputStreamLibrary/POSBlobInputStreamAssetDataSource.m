@@ -11,6 +11,7 @@
 #import "POSAdjustedAssetReaderIOS7.h"
 #import "POSAdjustedAssetReaderIOS8.h"
 #import "POSLocking.h"
+#import "ALAssetsLibrary+POS.h"
 
 #import <MobileCoreServices/MobileCoreServices.h>
 #import <UIKit/UIKit.h>
@@ -158,56 +159,24 @@ typedef NS_ENUM(int, ResetMode) {
     [lock lock];
     dispatch_async(dispatch_get_main_queue(), ^{ @autoreleasepool {
         self.assetsLibrary = [ALAssetsLibrary new];
-        [_assetsLibrary assetForURL:_assetURL resultBlock:^(ALAsset *asset) {
-            if (asset != nil) {
-                ALAssetRepresentation *assetRepresentation = [asset defaultRepresentation];
-                
+        [_assetsLibrary mrc_assetForURL:_assetURL resultBlock:^(ALAsset *asset) {
+            ALAssetRepresentation *assetRepresentation = [asset defaultRepresentation];
+            if (assetRepresentation) {
                 self.asset = asset;
                 self.assetRepresentation = assetRepresentation;
                 self.assetReader = [self p_assetReaderForAssetRepresentation:assetRepresentation];
-                [_assetReader openAsset:assetRepresentation
-                             fromOffset:_readOffset
-                      completionHandler:^(POSLength assetSize, NSError *error) {
-                          if (error != nil || assetSize <= 0 || (_assetSize != 0 && _assetSize != assetSize)) {
-                              self.error = [NSError pos_assetOpenErrorWithURL:_assetURL reason:error];
-                          } else {
-                              self.assetSize = assetSize;
-                          }
-                          [lock unlock];
-                      }];
+                [_assetReader
+                 openAsset:assetRepresentation
+                 fromOffset:_readOffset
+                 completionHandler:^(POSLength assetSize, NSError *error) {
+                     if (error != nil || assetSize <= 0 || (_assetSize != 0 && _assetSize != assetSize)) {
+                         self.error = [NSError pos_assetOpenErrorWithURL:_assetURL reason:error];
+                     } else {
+                         self.assetSize = assetSize;
+                     }
+                 }];
             } else {
-                if (!asset) {
-                    //照片流失败重试的bug
-                    [self.assetsLibrary enumerateGroupsWithTypes:ALAssetsGroupPhotoStream usingBlock:^(ALAssetsGroup *group, BOOL *stop) {
-                        [group enumerateAssetsWithOptions:NSEnumerationReverse usingBlock:^(ALAsset *result, NSUInteger index, BOOL *stop) {
-                            //                            NSLog(@"result.defaultRepresentation.url:%@    _assetURL:%@",result.defaultRepresentation.url, _assetURL );
-                            if ([result.defaultRepresentation.url isEqual:_assetURL]) {
-                                ALAssetRepresentation *assetRepresentation = [result defaultRepresentation];
-                                self.asset = result;
-                                self.assetRepresentation = assetRepresentation;
-                                self.assetReader = [POSFastAssetReader new];
-                                NSLog(@"self.assetReader  :%@",self.assetReader);
-                                [_assetReader openAsset:assetRepresentation
-                                             fromOffset:_readOffset
-                                      completionHandler:^(POSLength assetSize, NSError *error) {
-                                          if (error != nil || assetSize <= 0 || (_assetSize != 0 && _assetSize != assetSize)) {
-                                              NSLog(@"self.error:%@",error);
-                                              self.error = [NSError pos_assetOpenErrorWithURL:_assetURL reason:error];
-                                          } else {
-                                              self.assetSize = assetSize;
-                                          }
-                                          [lock unlock];
-                                      }];
-                                *stop = YES;
-                            }
-                        }];
-                    } failureBlock:^(NSError *error) {
-                        NSLog(@"Error: %@", [error localizedDescription]);
-                        self.error = [NSError pos_assetOpenErrorWithURL:_assetURL reason:nil];
-                        [lock unlock];
-                    }];
-                }
-                
+                self.error = [NSError pos_assetOpenErrorWithURL:_assetURL reason:nil];
             }
         } failureBlock:^(NSError *error) {
             self.error = [NSError pos_assetOpenErrorWithURL:_assetURL reason:error];
