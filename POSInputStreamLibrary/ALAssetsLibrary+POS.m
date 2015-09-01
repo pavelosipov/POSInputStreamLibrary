@@ -11,11 +11,11 @@
 @implementation ALAssetsLibrary (POS)
 
 - (void)pos_assetForURL:(NSURL *)assetURL
-            resultBlock:(ALAssetsLibraryAssetForURLResultBlock)resultBlock
+            resultBlock:(POSAssetLookupResultBlock)resultBlock
            failureBlock:(ALAssetsLibraryAccessFailureBlock)failureBlock {
     [self assetForURL:assetURL resultBlock:^(ALAsset *asset) {
         if (asset) {
-            resultBlock(asset);
+            resultBlock(asset, nil);
             return;
         }
         __block BOOL groupAssetFound = NO;
@@ -27,7 +27,7 @@
                  return;
              }
              if (!group) {
-                 resultBlock(nil);
+                 resultBlock(nil, nil);
                  return;
              }
              [group enumerateAssetsUsingBlock:^(ALAsset *asset, NSUInteger index, BOOL *stopEnumeratingAssets) {
@@ -37,7 +37,7 @@
                  // For iOS 5 you should use another check:
                  // [[[asset valueForProperty:ALAssetPropertyURLs] allObjects] lastObject]
                  if ([[asset valueForProperty:ALAssetPropertyAssetURL] isEqual:assetURL]) {
-                     resultBlock(asset);
+                     resultBlock(asset, group);
                      groupAssetFound = YES;
                      *stopEnumeratingAssets = YES;
                  }

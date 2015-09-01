@@ -8,10 +8,12 @@
 
 #import <AssetsLibrary/AssetsLibrary.h>
 
+typedef void (^POSAssetLookupResultBlock)(ALAsset *asset, ALAssetsGroup *assetsGroup);
+
 @interface ALAssetsLibrary (POS)
 
 - (void)pos_assetForURL:(NSURL *)assetURL
-            resultBlock:(ALAssetsLibraryAssetForURLResultBlock)resultBlock
+            resultBlock:(POSAssetLookupResultBlock)resultBlock
            failureBlock:(ALAssetsLibraryAccessFailureBlock)failureBlock;
 
 @end

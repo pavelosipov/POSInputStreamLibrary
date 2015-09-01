@@ -159,12 +159,14 @@ typedef NS_ENUM(int, ResetMode) {
     [lock lock];
     dispatch_async(dispatch_get_main_queue(), ^{ @autoreleasepool {
         self.assetsLibrary = [ALAssetsLibrary new];
-        [_assetsLibrary pos_assetForURL:_assetURL resultBlock:^(ALAsset *asset) {
+        [_assetsLibrary pos_assetForURL:_assetURL resultBlock:^(ALAsset *asset, ALAssetsGroup *assetsGroup) {
             ALAssetRepresentation *assetRepresentation = [asset defaultRepresentation];
             if (assetRepresentation) {
                 self.asset = asset;
                 self.assetRepresentation = assetRepresentation;
-                self.assetReader = [self p_assetReaderForAssetRepresentation:assetRepresentation];
+                self.assetReader = (assetsGroup
+                                    ? [POSFastAssetReader new]
+                                    : [self p_assetReaderForAssetRepresentation:assetRepresentation]);
                 [_assetReader
                  openAsset:assetRepresentation
                  fromOffset:_readOffset
