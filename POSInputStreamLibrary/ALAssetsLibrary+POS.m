@@ -18,12 +18,11 @@
             resultBlock(asset);
             return;
         }
-        __block ALAsset *groupAsset;
+        __block BOOL groupAssetFound = NO;
         [self
          enumerateGroupsWithTypes:ALAssetsGroupPhotoStream
          usingBlock:^(ALAssetsGroup *group, BOOL *stopEnumeratingGroups) {
-             if (groupAsset) {
-                 resultBlock(groupAsset);
+             if (groupAssetFound) {
                  *stopEnumeratingGroups = YES;
                  return;
              }
@@ -38,7 +37,8 @@
                  // For iOS 5 you should use another check:
                  // [[[asset valueForProperty:ALAssetPropertyURLs] allObjects] lastObject]
                  if ([[asset valueForProperty:ALAssetPropertyAssetURL] isEqual:assetURL]) {
-                     groupAsset = asset;
+                     resultBlock(asset);
+                     groupAssetFound = YES;
                      *stopEnumeratingAssets = YES;
                  }
              }];
