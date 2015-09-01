@@ -10,7 +10,7 @@
 
 @implementation ALAssetsLibrary (POS)
 
-- (void)mrc_assetForURL:(NSURL *)assetURL
+- (void)pos_assetForURL:(NSURL *)assetURL
             resultBlock:(ALAssetsLibraryAssetForURLResultBlock)resultBlock
            failureBlock:(ALAssetsLibraryAccessFailureBlock)failureBlock {
     [self assetForURL:assetURL resultBlock:^(ALAsset *asset) {
