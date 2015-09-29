@@ -201,11 +201,13 @@ typedef NS_ENUM(int, ResetMode) {
         representation.size <= _adjustedImageMaximumSize) {
         POSAdjustedAssetReaderIOS8 *assetReader = [POSAdjustedAssetReaderIOS8 new];
         assetReader.suspiciousSize = _adjustedImageMaximumSize;
+        assetReader.completionDispatchQueue = self.openDispatchQueue;
         return assetReader;
     }
     if (representation.metadata[@"AdjustmentXMP"] != nil) {
         POSAdjustedAssetReaderIOS7 *assetReader = [POSAdjustedAssetReaderIOS7 new];
         assetReader.JPEGCompressionQuality = _adjustedJPEGCompressionQuality;
+        assetReader.completionDispatchQueue = self.openDispatchQueue;
         return assetReader;
     }
     return [POSFastAssetReader new];

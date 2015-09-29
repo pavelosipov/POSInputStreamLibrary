@@ -66,7 +66,7 @@ typedef NS_ENUM(NSInteger, POSBlobInputStreamAssetDataSourceErrorCode) {
                 ALAsset is retrieved on main dispatch queue. AFNetworking also uses
                 main dispatch queue to open NSInputStream so we cannot use it.
  */
-@property (nonatomic, assign) dispatch_queue_t openDispatchQueue;
+@property (nonatomic, strong) dispatch_queue_t openDispatchQueue;
 
 /// The designated initializer.
 - (instancetype)initWithAssetURL:(NSURL *)assetURL;

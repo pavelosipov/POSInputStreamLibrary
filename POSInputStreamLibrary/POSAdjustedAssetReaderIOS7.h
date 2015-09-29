@@ -12,4 +12,11 @@
 
 @property (nonatomic, assign) CGFloat JPEGCompressionQuality;
 
+/*!
+    @brief Dispatch queue for getting ALAsset.
+
+    @remarks See POSBlobInputStreamAssetDataSource.h
+ */
+@property (nonatomic, strong) dispatch_queue_t completionDispatchQueue;
+
 @end

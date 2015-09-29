@@ -35,7 +35,9 @@ completionHandler:(void (^)(POSLength assetSize, NSError *error))completionHandl
     }
     void (^openCompletionBlock)(NSData *, NSError *) = ^void(NSData *assetData, NSError *error) {
         self.imageData = assetData;
-        completionHandler([_imageData length], error);
+        dispatch_async(self.completionDispatchQueue ?: dispatch_get_main_queue(), ^{
+            completionHandler([_imageData length], error);
+        });
     };
     [self p_fetchAssetDataForAsset:asset completionBlock:^(NSData *assetData, NSError *error) {
         if ([assetData length] <= _suspiciousSize) {

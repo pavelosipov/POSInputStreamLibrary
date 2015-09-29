@@ -18,4 +18,11 @@
 /// can take from the info dictionary with 'PHImageFileURLKey' key.
 @property (nonatomic, assign) long long suspiciousSize;
 
+/*!
+ @brief Dispatch queue for getting ALAsset.
+
+ @remarks See POSBlobInputStreamAssetDataSource.h
+ */
+@property (nonatomic, strong) dispatch_queue_t completionDispatchQueue;
+
 @end
