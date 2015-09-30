@@ -59,6 +59,15 @@ typedef NS_ENUM(NSInteger, POSBlobInputStreamAssetDataSourceErrorCode) {
  */
 @property (nonatomic, assign) long long adjustedImageMaximumSize;
 
+/*!
+    @brief Dispatch queue for getting ALAsset.
+
+    @discussion By default when stream is opened, current dispatch queue is locked and
+                ALAsset is retrieved on main dispatch queue. AFNetworking also uses
+                main dispatch queue to open NSInputStream so we cannot use it.
+ */
+@property (nonatomic, strong) dispatch_queue_t openDispatchQueue;
+
 /// The designated initializer.
 - (instancetype)initWithAssetURL:(NSURL *)assetURL;
 

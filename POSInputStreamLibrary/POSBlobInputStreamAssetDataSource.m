@@ -157,7 +157,7 @@ typedef NS_ENUM(int, ResetMode) {
 - (void)p_open {
     id<POSLocking> lock = [self p_lockForOpening];
     [lock lock];
-    dispatch_async(dispatch_get_main_queue(), ^{ @autoreleasepool {
+    dispatch_async(self.openDispatchQueue ?: dispatch_get_main_queue(), ^{ @autoreleasepool {
         self.assetsLibrary = [ALAssetsLibrary new];
         [_assetsLibrary pos_assetForURL:_assetURL resultBlock:^(ALAsset *asset, ALAssetsGroup *assetsGroup) {
             ALAssetRepresentation *assetRepresentation = [asset defaultRepresentation];
@@ -201,11 +201,13 @@ typedef NS_ENUM(int, ResetMode) {
         representation.size <= _adjustedImageMaximumSize) {
         POSAdjustedAssetReaderIOS8 *assetReader = [POSAdjustedAssetReaderIOS8 new];
         assetReader.suspiciousSize = _adjustedImageMaximumSize;
+        assetReader.completionDispatchQueue = self.openDispatchQueue;
         return assetReader;
     }
     if (representation.metadata[@"AdjustmentXMP"] != nil) {
         POSAdjustedAssetReaderIOS7 *assetReader = [POSAdjustedAssetReaderIOS7 new];
         assetReader.JPEGCompressionQuality = _adjustedJPEGCompressionQuality;
+        assetReader.completionDispatchQueue = self.openDispatchQueue;
         return assetReader;
     }
     return [POSFastAssetReader new];
@@ -213,9 +215,11 @@ typedef NS_ENUM(int, ResetMode) {
 
 - (id<POSLocking>)p_lockForOpening {
     if ([self shouldOpenSynchronously]) {
-        // If you want open stream synchronously you should
-        // do that in some worker thread to avoid deadlock.
-        NSParameterAssert(![[NSThread currentThread] isMainThread]);
+        if (!self.openDispatchQueue) {
+            // If you want open stream synchronously you should
+            // do that in some worker thread to avoid deadlock.
+            NSParameterAssert(![[NSThread currentThread] isMainThread]);
+        }
         return [POSGCDLock new];
     } else {
         return [POSDummyLock new];

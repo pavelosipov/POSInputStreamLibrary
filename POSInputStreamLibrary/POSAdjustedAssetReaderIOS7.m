@@ -60,7 +60,7 @@ completionHandler:(void (^)(POSLength assetSize, NSError *error))completionHandl
                 }
             }
         }
-        dispatch_async(dispatch_get_main_queue(), ^{
+        dispatch_async(self.completionDispatchQueue ?: dispatch_get_main_queue(), ^{
             completionHandler(self.imageData.length, error);
         });
     });
