@@ -12,7 +12,7 @@ as its data source. The main features of `POSBlobInputStream` are the following:
 - Autorecovery after ALAssetRepresentation invalidation.
 - Adjustment filters detection and applying for both iOS 7 and iOS 8 (new in 2.0.0).
 - Integration with CFNetwork framework.
-- Integration with AFNetworking (thanks to @bancek).
+- Integration with AFNetworking (thanks to [@bancek](https://github.com/bancek)).
 
 The category for `NSInputStream` defines initializers for the most common cases:
 
