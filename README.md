@@ -143,7 +143,7 @@ for AFNetworking integration.
 
 Example:
 
-```
+```objective-c
 - (void) uploadAsset:(ALAsset*)asset toUrl:(NSString*)url
              success:(void (^)(id responseObject))success
              failure:(void (^)(NSError* error))failure {
