@@ -19,9 +19,8 @@
 @property (nonatomic, assign) long long suspiciousSize;
 
 /*!
- @brief Dispatch queue for getting ALAsset.
-
- @remarks See POSBlobInputStreamAssetDataSource.h
+    @brief Dispatch queue for fetching ALAsset from ALAssetsLibrary.
+    @remarks See POSBlobInputStreamAssetDataSource.h
  */
 @property (nonatomic, strong) dispatch_queue_t completionDispatchQueue;
 
