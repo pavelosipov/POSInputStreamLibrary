@@ -136,6 +136,36 @@ return `NSStreamStatusError`. More over, `POSBlobInputStream` will not notify ab
 status change via C-callbacks. The only way to receive actual status of the stream is via
 `NSStreamDelagate` callback.
 
+## Integrating with AFNetworking
+
+`POSBlobInputStream` provides `pos_inputStreamForAFNetworkingWithAssetURL` initializer
+for AFNetworking integration.
+
+Example:
+
+```
+- (void) uploadAsset:(ALAsset*)asset toUrl:(NSString*)url success:(void (^)(id responseObject))success failure:(void (^)(NSError* error))failure
+{
+    ALAssetRepresentation *assetRepresentation = asset.defaultRepresentation;
+    NSString* assetFilename = assetRepresentation.filename;
+    NSURL *assetUrl = assetRepresentation.url;
+    unsigned long long assetSize = assetRepresentation.size;
+    NSInputStream *assetInputStream = [NSInputStream pos_inputStreamForAFNetworkingWithAssetURL:assetUrl];
+
+    AFHTTPRequestOperationManager *manager = [AFHTTPRequestOperationManager manager];
+
+    AFHTTPRequestOperation *op = [manager POST:url parameters:nil constructingBodyWithBlock:^(id<AFMultipartFormData> formData) {
+        [formData appendPartWithInputStream:assetInputStream name:@"file" fileName:assetFilename length:assetSize mimeType:@"image/jpeg"];
+    } success:^(AFHTTPRequestOperation *operation, id responseObject) {
+        success(responseObject);
+    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+        failure(error);
+    }];
+}
+```
+
+See https://github.com/bancek/POSInputStreamAFNetworkingExample for full example.
+
 ## Resources
 
 * [How POSInputStreamLibrary was born inside Cloud Mail.Ru iOS Team (RU)](http://habr.ru/p/216247/)

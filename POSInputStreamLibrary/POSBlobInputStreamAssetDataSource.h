@@ -71,4 +71,6 @@ typedef NS_ENUM(NSInteger, POSBlobInputStreamAssetDataSourceErrorCode) {
 /// The designated initializer.
 - (instancetype)initWithAssetURL:(NSURL *)assetURL;
 
++ (dispatch_queue_t)openDispatchQueue;
+
 @end
