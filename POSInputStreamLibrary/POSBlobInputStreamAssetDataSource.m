@@ -18,6 +18,8 @@
 
 NSString * const POSBlobInputStreamAssetDataSourceErrorDomain = @"com.github.pavelosipov.POSBlobInputStreamAssetDataSource";
 
+const char *POSInputStreamOpenDispatchQueueName = "com.github.pavelosipov.POSInputStreamOpenDispatchQueue";
+
 NSInteger const kPOSReadFailureReturnCode = -1;
 
 typedef NS_ENUM(int, ResetMode) {
@@ -44,6 +46,17 @@ typedef NS_ENUM(int, ResetMode) {
 @implementation POSBlobInputStreamAssetDataSource {
 }
 @dynamic openCompleted, hasBytesAvailable, atEnd;
+
++ (dispatch_queue_t)openDispatchQueue {
+    static dispatch_queue_t _openDispatchQueue = nil;
+
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        _openDispatchQueue = dispatch_queue_create(POSInputStreamOpenDispatchQueueName, NULL);
+    });
+
+    return _openDispatchQueue;
+}
 
 #pragma mark - Lifecycle
 
