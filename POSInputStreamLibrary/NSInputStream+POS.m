@@ -36,7 +36,7 @@
 + (NSInputStream *)pos_inputStreamForAFNetworkingWithAssetURL:(NSURL *)assetURL {
     POSBlobInputStreamAssetDataSource *dataSource = [[POSBlobInputStreamAssetDataSource alloc] initWithAssetURL:assetURL];
     dataSource.openSynchronously = YES;
-    dataSource.openDispatchQueue = POSBlobInputStreamAssetDataSource.openDispatchQueue;
+    dataSource.openDispatchQueue = POSBlobInputStreamAssetDataSource.sharedOpenDispatchQueue;
     POSBlobInputStream *stream = [[POSBlobInputStream alloc] initWithDataSource:dataSource];
     stream.shouldNotifyCoreFoundationAboutStatusChange = NO;
     return stream;
