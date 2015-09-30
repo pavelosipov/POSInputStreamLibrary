@@ -14,6 +14,6 @@
 + (NSInputStream *)pos_inputStreamWithAssetURL:(NSURL *)assetURL asynchronous:(BOOL)asynchronous;
 
 + (NSInputStream *)pos_inputStreamForCFNetworkWithAssetURL:(NSURL *)assetURL;
-+ (NSInputStream *)pos_inputStreamForAFNetworkWithAssetURL:(NSURL *)assetURL;
++ (NSInputStream *)pos_inputStreamForAFNetworkingWithAssetURL:(NSURL *)assetURL;
 
 @end
