@@ -13,6 +13,9 @@
 + (NSInputStream *)pos_inputStreamWithAssetURL:(NSURL *)assetURL;
 + (NSInputStream *)pos_inputStreamWithAssetURL:(NSURL *)assetURL asynchronous:(BOOL)asynchronous;
 
++ (NSInputStream *)pos_inputStreamWithAssetLocalIdentifier:(NSString *)assetLocalIdentifier
+                                       temporaryFolderPath:(NSString *)temporaryFolderPath;
+
 + (NSInputStream *)pos_inputStreamForCFNetworkWithAssetURL:(NSURL *)assetURL;
 + (NSInputStream *)pos_inputStreamForAFNetworkingWithAssetURL:(NSURL *)assetURL;
 

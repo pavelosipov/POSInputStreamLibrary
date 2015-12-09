@@ -36,6 +36,7 @@ static const char * const POSInputStreamSharedOpenDispatchQueueName = "com.githu
 - (instancetype)initWithAssetID:(id)assetID {
     NSParameterAssert(assetID);
     if (self = [super init]) {
+        _adjustedImageMaximumSize = 1024 * 1024;
         _assetID = [assetID copy];
     }
     return self;

@@ -9,7 +9,7 @@
 #import "POSBlobInputStreamAssetDataSource.h"
 #import "POSFastAssetReader.h"
 #import "POSAdjustedAssetReaderIOS7.h"
-#import "POSAdjustedAssetReaderIOS8.h"
+#import "POSImageReaderIOS8.h"
 #import "ALAssetsLibrary+POS.h"
 
 #import <MobileCoreServices/MobileCoreServices.h>
@@ -26,7 +26,6 @@
     NSParameterAssert(assetURL);
     if (self = [super initWithAssetID:assetURL]) {
         _adjustedJPEGCompressionQuality = .93f;
-        _adjustedImageMaximumSize = 1024 * 1024;
     }
     return self;
 }
@@ -62,16 +61,14 @@
                 assetsLibrary:assetsLibrary];
     }
     if ([UIDevice currentDevice].systemVersion.floatValue >= 8.0 &&
-        assetRepresentation.size <= _adjustedImageMaximumSize) {
-        POSAdjustedAssetReaderIOS8 *assetReader = [[POSAdjustedAssetReaderIOS8 alloc]
-                                                   initWithAsset:asset
-                                                   assetRepresentation:assetRepresentation
-                                                   assetsLibrary:assetsLibrary];
-        assetReader.suspiciousSize = _adjustedImageMaximumSize;
-        assetReader.completionDispatchQueue = self.openDispatchQueue;
-        return assetReader;
-    }
-    if (assetRepresentation.metadata[@"AdjustmentXMP"] != nil) {
+        assetRepresentation.size <= self.adjustedImageMaximumSize) {
+        POSImageReaderIOS8 *assetReader = [self p_imageReaderAssetWithURL:assetRepresentation.url];
+        if (assetReader) {
+            assetReader.suspiciousSize = self.adjustedImageMaximumSize;
+            assetReader.completionDispatchQueue = self.openDispatchQueue;
+            return assetReader;
+        }
+    } else if (assetRepresentation.metadata[@"AdjustmentXMP"] != nil) {
         POSAdjustedAssetReaderIOS7 *assetReader = [[POSAdjustedAssetReaderIOS7 alloc]
                                                    initWithAsset:asset
                                                    assetRepresentation:assetRepresentation
@@ -84,6 +81,16 @@
             initWithAsset:asset
             assetRepresentation:assetRepresentation
             assetsLibrary:assetsLibrary];
+}
+
+- (POSImageReaderIOS8 *)p_imageReaderAssetWithURL:(NSURL *)assetURL {
+    PHFetchOptions *options = [PHFetchOptions new];
+    options.wantsIncrementalChangeDetails = NO;
+    PHFetchResult *assets = [PHAsset fetchAssetsWithALAssetURLs:@[assetURL] options:options];
+    if ([assets count] == 0) {
+        return nil;
+    }
+    return [[POSImageReaderIOS8 alloc] initWithAsset:[assets firstObject]];
 }
 
 @end

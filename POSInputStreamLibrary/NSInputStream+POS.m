@@ -10,6 +10,7 @@
 
 #import "POSBlobInputStream.h"
 #import "POSBlobInputStreamAssetDataSource.h"
+#import "POSBlobInputStreamPHAssetDataSource.h"
 
 @implementation NSInputStream (POS)
 
@@ -22,6 +23,17 @@
     dataSource.openSynchronously = !asynchronous;
     POSBlobInputStream *stream = [[POSBlobInputStream alloc] initWithDataSource:dataSource];
     stream.shouldNotifyCoreFoundationAboutStatusChange = YES;
+    return stream;
+}
+
++ (NSInputStream *)pos_inputStreamWithAssetLocalIdentifier:(NSString *)assetLocalIdentifier
+                                       temporaryFolderPath:(NSString *)temporaryFolderPath {
+    POSBlobInputStreamPHAssetDataSource *dataSource = [[POSBlobInputStreamPHAssetDataSource alloc]
+                                                       initWithAssetID:assetLocalIdentifier
+                                                       temporaryFolderPath:temporaryFolderPath];
+    dataSource.openSynchronously = YES;
+    POSBlobInputStream *stream = [[POSBlobInputStream alloc] initWithDataSource:dataSource];
+    stream.shouldNotifyCoreFoundationAboutStatusChange = NO;
     return stream;
 }
 

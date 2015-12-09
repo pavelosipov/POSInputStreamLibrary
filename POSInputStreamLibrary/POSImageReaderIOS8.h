@@ -1,5 +1,5 @@
 //
-//  POSAdjustedAssetReaderIOS8.h
+//  POSImageReaderIOS8.h
 //  POSInputStreamLibrary
 //
 //  Created by Pavel Osipov on 12.05.15.
@@ -7,8 +7,9 @@
 //
 
 #import "POSAssetReader.h"
+#import <Photos/Photos.h>
 
-@interface POSAdjustedAssetReaderIOS8 : NSObject <POSAssetReader>
+@interface POSImageReaderIOS8 : NSObject <POSAssetReader>
 
 /// When you try to get adjusted photo just after taking it in Camera app,
 /// Photos framework will provide data of 'SubstandardFullSizeRender.jpg'.
@@ -23,9 +24,7 @@
 @property (nonatomic, nullable) dispatch_queue_t completionDispatchQueue;
 
 /// The designated initializer.
-- (nonnull instancetype)initWithAsset:(nonnull ALAsset *)asset
-                  assetRepresentation:(nonnull ALAssetRepresentation *)assetRepresentation
-                        assetsLibrary:(nonnull ALAssetsLibrary *)assetsLibrary;
+- (nonnull instancetype)initWithAsset:(nonnull PHAsset *)asset;
 
 /// Deadly initializer.
 - (nonnull instancetype)init NS_UNAVAILABLE;

@@ -7,6 +7,7 @@
 //
 
 #import "POSBlobInputStreamPHAssetDataSource.h"
+#import "POSImageReaderIOS8.h"
 #import "POSFastAssetReader.h"
 #import "POSLocking.h"
 #import <Photos/Photos.h>
@@ -31,7 +32,27 @@
 #pragma mark POSBlobInputStreamBaseAssetDataSource
 
 - (void)abstract_openAssetWithID:(id)assetID completionBlock:(void (^)(id<POSAssetReader>, NSError *))completionBlock {
-    /// TODO: Add implementation.
+    PHFetchOptions *fetchOptions = [PHFetchOptions new];
+    fetchOptions.wantsIncrementalChangeDetails = NO;
+    PHFetchResult<PHAsset *> *fetchResult = [PHAsset fetchAssetsWithLocalIdentifiers:@[assetID] options:fetchOptions];
+    if (fetchResult.count == 0) {
+        completionBlock(nil, nil);
+        return;
+    }
+    PHAsset *asset = [fetchResult firstObject];
+    if (asset.mediaType == PHAssetMediaTypeImage ||
+        asset.mediaSubtypes != 0) {
+        POSImageReaderIOS8 *assetReader = [[POSImageReaderIOS8 alloc] initWithAsset:asset];
+        assetReader.suspiciousSize = self.adjustedImageMaximumSize;
+        assetReader.completionDispatchQueue = self.openDispatchQueue;
+        completionBlock(assetReader, nil);
+    } else {
+        // Trying:
+        // 1. ImageDataAssetReader
+        // 2. ALAssetReader
+        // 3. DefaultAssetReader
+        completionBlock(nil, nil);
+    }
 }
 
 @end

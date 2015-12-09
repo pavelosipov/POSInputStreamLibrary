@@ -12,7 +12,7 @@
 @interface POSBlobInputStreamPHAssetDataSource : POSBlobInputStreamBaseAssetDataSource
 
 /// @brief The designated initializer.
-/// @param assetID Identifier of the PHAsset.
+/// @param assetID localIdentifier of the PHAsset.
 /// @param temporaryFolderPath Path to the folder, where local copy of the asset
 ///                            may be placed it will not possible to avoid that.
 ///                            The folder will be created if it doesn't exist yet.

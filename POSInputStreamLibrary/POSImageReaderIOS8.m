@@ -1,56 +1,41 @@
 //
-//  POSAdjustedAssetReaderIOS8.m
+//  POSImageReaderIOS8.m
 //  POSInputStreamLibrary
 //
 //  Created by Pavel Osipov on 12.05.15.
 //  Copyright (c) 2015 Pavel Osipov. All rights reserved.
 //
 
-#import "POSAdjustedAssetReaderIOS8.h"
-#import <Photos/Photos.h>
+#import "POSImageReaderIOS8.h"
 
-@interface POSAdjustedAssetReaderIOS8 ()
-@property (nonatomic, readonly) ALAssetsLibrary *assetsLibrary;
-@property (nonatomic, readonly) ALAsset *asset;
-@property (nonatomic, readonly) ALAssetRepresentation *assetRepresentation;
+@interface POSImageReaderIOS8 ()
+@property (nonatomic, readonly) PHAsset *asset;
 @property (nonatomic) NSData *imageData;
 @end
 
-@implementation POSAdjustedAssetReaderIOS8
+@implementation POSImageReaderIOS8
 
-- (instancetype)initWithAsset:(ALAsset *)asset
-          assetRepresentation:(ALAssetRepresentation *)assetRepresentation
-                assetsLibrary:(ALAssetsLibrary *)assetsLibrary {
+- (instancetype)initWithAsset:(PHAsset *)asset {
     NSParameterAssert(asset);
-    NSParameterAssert(assetRepresentation);
-    NSParameterAssert(assetsLibrary);
     if (self = [super init]) {
         _suspiciousSize = LONG_LONG_MAX;
         _asset = asset;
-        _assetRepresentation = assetRepresentation;
-        _assetsLibrary = assetsLibrary;
     }
     return self;
 }
 
-#pragma mark - POSAssetReader
+#pragma mark POSAssetReader
 
 - (void)openFromOffset:(POSLength)offset completionHandler:(void (^)(POSLength, NSError *))completionHandler {
-    NSError *error;
-    PHAsset *asset = [self p_fetchAssetForWithURL:_assetRepresentation.url error:&error];
-    if (!asset) {
-        completionHandler(0, error);
-        return;
-    }
     void (^openCompletionBlock)(NSData *, NSError *) = ^void(NSData *assetData, NSError *error) {
         self.imageData = assetData;
         dispatch_async(self.completionDispatchQueue ?: dispatch_get_main_queue(), ^{
             completionHandler([_imageData length], error);
         });
     };
-    [self p_fetchAssetDataForAsset:asset completionBlock:^(NSData *assetData, NSError *error) {
+    [self p_fetchAssetDataForAsset:_asset completionBlock:^(NSData *assetData, NSError *error) {
         if ([assetData length] <= _suspiciousSize) {
-            [self p_fetchAssetDataForAsset:asset completionBlock:openCompletionBlock];
+            [self p_fetchAssetDataForAsset:_asset completionBlock:openCompletionBlock];
         } else {
             openCompletionBlock(assetData, error);
         }
@@ -78,20 +63,7 @@
     return (NSInteger)readResult;
 }
 
-#pragma mark - Private
-
-- (PHAsset *)p_fetchAssetForWithURL:(NSURL *)assetURL error:(NSError **)error {
-    PHFetchOptions *options = [PHFetchOptions new];
-    options.wantsIncrementalChangeDetails = NO;
-    PHFetchResult *assets = [PHAsset fetchAssetsWithALAssetURLs:@[assetURL] options:options];
-    if ([assets count] == 0) {
-        *error = [NSError errorWithDomain:POSBlobInputStreamAssetDataSourceErrorDomain
-                                     code:201
-                                 userInfo:@{ NSLocalizedDescriptionKey: @"Image not found." }];
-        return nil;
-    }
-    return [assets firstObject];
-}
+#pragma mark Private
 
 - (void)p_fetchAssetDataForAsset:(PHAsset *)asset
                  completionBlock:(void (^)(NSData *assetData, NSError *error))completionHandler {
