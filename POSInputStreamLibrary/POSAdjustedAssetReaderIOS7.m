@@ -13,49 +13,41 @@
 #import <UIKit/UIKit.h>
 
 @interface POSAdjustedAssetReaderIOS7 ()
-@property (nonatomic) NSData *imageData;
+@property (nonatomic, readonly) ALAssetsLibrary *assetsLibrary;
+@property (nonatomic, readonly) ALAsset *asset;
+@property (nonatomic, readonly) ALAssetRepresentation *assetRepresentation;
+@property (atomic) NSData *imageData;
 @end
 
-@implementation POSAdjustedAssetReaderIOS7 {
-    NSData *_imageData;
-}
-@dynamic imageData;
+@implementation POSAdjustedAssetReaderIOS7
 
-- (instancetype)init {
+- (instancetype)initWithAsset:(ALAsset *)asset
+          assetRepresentation:(ALAssetRepresentation *)assetRepresentation
+                assetsLibrary:(ALAssetsLibrary *)assetsLibrary {
+    NSParameterAssert(asset);
+    NSParameterAssert(assetRepresentation);
+    NSParameterAssert(assetsLibrary);
     if (self = [super init]) {
         _JPEGCompressionQuality = .93f;
+        _asset = asset;
+        _assetRepresentation = assetRepresentation;
+        _assetsLibrary = assetsLibrary;
     }
     return self;
 }
 
-#pragma mark - Properties
+#pragma mark POSAssetReader
 
-- (NSData *)imageData {
-    @synchronized(self) {
-        return _imageData;
-    }
-}
-
-- (void)setImageData:(NSData *)imageData {
-    @synchronized(self) {
-        _imageData = imageData;
-    }
-}
-
-#pragma mark - POSAssetReader
-
-- (void)openAsset:(ALAssetRepresentation *)assetRepresentation
-       fromOffset:(POSLength)offset
-completionHandler:(void (^)(POSLength assetSize, NSError *error))completionHandler {
+- (void)openFromOffset:(POSLength)offset completionHandler:(void (^)(POSLength, NSError *))completionHandler {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), ^{
         NSError *error;
         @autoreleasepool {
-            UIImage *image = [self p_adjustedImageDataFromAssetRepresentation:assetRepresentation error:&error];
+            UIImage *image = [self p_adjustedImageDataFromAssetRepresentation:_assetRepresentation error:&error];
             if (image) {
-                NSData *imageData = [self p_dataFromImage:image withUTI:assetRepresentation.UTI error:&error];
+                NSData *imageData = [self p_dataFromImage:image withUTI:_assetRepresentation.UTI error:&error];
                 if (imageData) {
                     self.imageData = [self p_dataForImageData:imageData
-                                                 withMetadata:assetRepresentation.metadata
+                                                 withMetadata:_assetRepresentation.metadata
                                                         error:&error];
                 }
             }

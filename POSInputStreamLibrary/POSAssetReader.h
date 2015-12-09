@@ -14,9 +14,8 @@ typedef long long POSLength;
 
 @protocol POSAssetReader
 
-- (void)openAsset:(ALAssetRepresentation *)assetRepresentation
-       fromOffset:(POSLength)offset
-completionHandler:(void (^)(POSLength assetSize, NSError *error))completionHandler;
+- (void)openFromOffset:(POSLength)offset
+     completionHandler:(void (^)(POSLength assetSize, NSError *error))completionHandler;
 
 - (BOOL)hasBytesAvailableFromOffset:(POSLength)offset;
 

@@ -10,25 +10,34 @@
 #import <Photos/Photos.h>
 
 @interface POSAdjustedAssetReaderIOS8 ()
+@property (nonatomic, readonly) ALAssetsLibrary *assetsLibrary;
+@property (nonatomic, readonly) ALAsset *asset;
+@property (nonatomic, readonly) ALAssetRepresentation *assetRepresentation;
 @property (nonatomic) NSData *imageData;
 @end
 
 @implementation POSAdjustedAssetReaderIOS8
 
-- (instancetype)init {
+- (instancetype)initWithAsset:(ALAsset *)asset
+          assetRepresentation:(ALAssetRepresentation *)assetRepresentation
+                assetsLibrary:(ALAssetsLibrary *)assetsLibrary {
+    NSParameterAssert(asset);
+    NSParameterAssert(assetRepresentation);
+    NSParameterAssert(assetsLibrary);
     if (self = [super init]) {
         _suspiciousSize = LONG_LONG_MAX;
+        _asset = asset;
+        _assetRepresentation = assetRepresentation;
+        _assetsLibrary = assetsLibrary;
     }
     return self;
 }
 
 #pragma mark - POSAssetReader
 
-- (void)openAsset:(ALAssetRepresentation *)assetRepresentation
-       fromOffset:(POSLength)offset
-completionHandler:(void (^)(POSLength assetSize, NSError *error))completionHandler {
+- (void)openFromOffset:(POSLength)offset completionHandler:(void (^)(POSLength, NSError *))completionHandler {
     NSError *error;
-    PHAsset *asset = [self p_fetchAssetForWithURL:assetRepresentation.url error:&error];
+    PHAsset *asset = [self p_fetchAssetForWithURL:_assetRepresentation.url error:&error];
     if (!asset) {
         completionHandler(0, error);
         return;

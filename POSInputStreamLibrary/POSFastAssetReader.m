@@ -10,21 +10,37 @@
 
 static uint64_t const kAssetCacheBufferSize = 131072;
 
+@interface POSFastAssetReader ()
+@property (nonatomic, readonly) ALAssetsLibrary *assetsLibrary;
+@property (nonatomic, readonly) ALAsset *asset;
+@property (nonatomic, readonly) ALAssetRepresentation *assetRepresentation;
+@end
+
 @implementation POSFastAssetReader {
     uint8_t _assetCache[kAssetCacheBufferSize];
     POSLength _assetSize;
     POSLength _assetCacheSize;
     POSLength _assetCacheOffset;
     POSLength _assetCacheInternalOffset;
-    ALAssetRepresentation *_assetRepresentation;
+}
+
+- (instancetype)initWithAsset:(ALAsset *)asset
+          assetRepresentation:(ALAssetRepresentation *)assetRepresentation
+                assetsLibrary:(ALAssetsLibrary *)assetsLibrary {
+    NSParameterAssert(asset);
+    NSParameterAssert(assetRepresentation);
+    NSParameterAssert(assetsLibrary);
+    if (self = [super init]) {
+        _asset = asset;
+        _assetRepresentation = assetRepresentation;
+        _assetsLibrary = assetsLibrary;
+    }
+    return self;
 }
 
 #pragma mark - POSAssetReader
 
-- (void)openAsset:(ALAssetRepresentation *)assetRepresentation
-       fromOffset:(POSLength)offset
-completionHandler:(void (^)(POSLength, NSError *))completionHandler {
-    _assetRepresentation = assetRepresentation;
+- (void)openFromOffset:(POSLength)offset completionHandler:(void (^)(POSLength, NSError *))completionHandler {
     NSError *error;
     [self p_refillCacheFromOffset:offset error:&error];
     completionHandler(_assetSize, error);

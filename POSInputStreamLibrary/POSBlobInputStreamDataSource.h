@@ -13,6 +13,12 @@ FOUNDATION_EXTERN NSString * const POSBlobInputStreamDataSourceHasBytesAvailable
 FOUNDATION_EXTERN NSString * const POSBlobInputStreamDataSourceAtEndKeyPath;
 FOUNDATION_EXTERN NSString * const POSBlobInputStreamDataSourceErrorKeyPath;
 
+/// These are the only types of errors which can raise POSBlobInputStreamAssetDataSource.
+typedef NS_ENUM(NSInteger, POSBlobInputStreamAssetDataSourceErrorCode) {
+    POSBlobInputStreamAssetDataSourceErrorCodeOpen = 0,
+    POSBlobInputStreamAssetDataSourceErrorCodeRead = 1
+};
+
 @protocol POSBlobInputStreamDataSource <NSObject>
 
 //
