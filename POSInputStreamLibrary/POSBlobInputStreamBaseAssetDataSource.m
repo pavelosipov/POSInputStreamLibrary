@@ -155,6 +155,7 @@ static const char * const POSInputStreamSharedOpenDispatchQueueName = "com.githu
         [self abstract_openAssetWithID:_assetID completionBlock:^(id<POSAssetReader> assetReader, NSError * error) {
             if (!assetReader) {
                 self.error = [NSError pos_assetOpenErrorWithID:_assetID reason:error];
+                [lock unlock];
             } else {
                 self.assetReader = assetReader;
                 [assetReader openFromOffset:_readOffset completionHandler:^(POSLength assetSize, NSError *error) {
@@ -163,9 +164,9 @@ static const char * const POSInputStreamSharedOpenDispatchQueueName = "com.githu
                     } else {
                         self.assetSize = assetSize;
                     }
+                    [lock unlock];
                 }];
             }
-            [lock unlock];
         }];
     }});
     [lock waitWithTimeout:DISPATCH_TIME_FOREVER];
