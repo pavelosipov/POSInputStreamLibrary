@@ -95,7 +95,7 @@ completionHandler:(void (^)(POSLength assetSize, NSError *error))completionHandl
                          error:(NSError **)error {
     CGImageSourceRef source = CGImageSourceCreateWithData((__bridge CFDataRef)imageData, NULL);
     if (!source) {
-        *error = [NSError errorWithDomain:POSBlobInputStreamAssetDataSourceErrorDomain code:102 userInfo:@{
+        if (error) *error = [NSError errorWithDomain:POSBlobInputStreamAssetDataSourceErrorDomain code:102 userInfo:@{
             NSLocalizedDescriptionKey: @"Failed to init buffer for image."
         }];
         return nil;
@@ -105,7 +105,7 @@ completionHandler:(void (^)(POSLength assetSize, NSError *error))completionHandl
     CGImageDestinationRef destination = CGImageDestinationCreateWithData((__bridge CFMutableDataRef)data, UTI, 1, NULL);
     if (!destination) {
         CFRelease(source);
-        *error = [NSError errorWithDomain:POSBlobInputStreamAssetDataSourceErrorDomain code:103 userInfo:@{
+        if (error) *error = [NSError errorWithDomain:POSBlobInputStreamAssetDataSourceErrorDomain code:103 userInfo:@{
             NSLocalizedDescriptionKey: @"Failed to add image data to buffer."
         }];
         return nil;
@@ -115,7 +115,7 @@ completionHandler:(void (^)(POSLength assetSize, NSError *error))completionHandl
     CFRelease(destination);
     CFRelease(source);
     if (!finalized) {
-        *error = [NSError errorWithDomain:POSBlobInputStreamAssetDataSourceErrorDomain code:104 userInfo:@{
+        if (error) *error = [NSError errorWithDomain:POSBlobInputStreamAssetDataSourceErrorDomain code:104 userInfo:@{
             NSLocalizedDescriptionKey: @"Failed to dump image data with metadata to in-memory buffer."
         }];
         return nil;
@@ -129,7 +129,7 @@ completionHandler:(void (^)(POSLength assetSize, NSError *error))completionHandl
     NSData *xmpData = [xmpString dataUsingEncoding:NSUTF8StringEncoding];
     CGImageRef fullResolutionImage = [assetRepresentation fullResolutionImage];
     if (!fullResolutionImage) {
-        *error = [NSError errorWithDomain:POSBlobInputStreamAssetDataSourceErrorDomain code:111 userInfo:@{
+        if (error) *error = [NSError errorWithDomain:POSBlobInputStreamAssetDataSourceErrorDomain code:111 userInfo:@{
             NSLocalizedDescriptionKey: @"Failed to get source image for rendering."
         }];
         return nil;
@@ -165,7 +165,7 @@ completionHandler:(void (^)(POSLength assetSize, NSError *error))completionHandl
         data = UIImagePNGRepresentation(image);
     }
     if (!data) {
-        *error = [NSError errorWithDomain:POSBlobInputStreamAssetDataSourceErrorDomain code:121 userInfo:@{
+        if (error) *error = [NSError errorWithDomain:POSBlobInputStreamAssetDataSourceErrorDomain code:121 userInfo:@{
             NSLocalizedDescriptionKey: @"Failed to generate data for image."
         }];
     }

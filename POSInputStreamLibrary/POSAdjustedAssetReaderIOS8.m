@@ -76,9 +76,9 @@ completionHandler:(void (^)(POSLength assetSize, NSError *error))completionHandl
     options.wantsIncrementalChangeDetails = NO;
     PHFetchResult *assets = [PHAsset fetchAssetsWithALAssetURLs:@[assetURL] options:options];
     if ([assets count] == 0) {
-        *error = [NSError errorWithDomain:POSBlobInputStreamAssetDataSourceErrorDomain
-                                     code:201
-                                 userInfo:@{ NSLocalizedDescriptionKey: @"Image not found." }];
+        if (error) *error = [NSError errorWithDomain:POSBlobInputStreamAssetDataSourceErrorDomain
+                                                code:201
+                                            userInfo:@{ NSLocalizedDescriptionKey: @"Image not found." }];
         return nil;
     }
     return [assets firstObject];
