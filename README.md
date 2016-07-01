@@ -166,6 +166,6 @@ See [full example](https://github.com/bancek/POSInputStreamAFNetworkingExample) 
 
 ## Resources
 
-* [Custom NSInputStream with 100 lines of code](http://bit.ly/1O1J06u)
+* [Custom NSInputStream with 100 lines of code](http://bit.ly/1njlCrp)
 * [How POSInputStreamLibrary was born inside Cloud Mail.Ru iOS Team (RU)](http://habr.ru/p/216247/)
 * [AFNetworking integration example](https://github.com/bancek/POSInputStreamAFNetworkingExample)
