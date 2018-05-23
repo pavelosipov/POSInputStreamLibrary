@@ -36,11 +36,11 @@ completionHandler:(void (^)(POSLength assetSize, NSError *error))completionHandl
     void (^openCompletionBlock)(NSData *, NSError *) = ^void(NSData *assetData, NSError *error) {
         self.imageData = assetData;
         dispatch_async(self.completionDispatchQueue ?: dispatch_get_main_queue(), ^{
-            completionHandler([_imageData length], error);
+            completionHandler(assetData.length, error);
         });
     };
     [self p_fetchAssetDataForAsset:asset completionBlock:^(NSData *assetData, NSError *error) {
-        if ([assetData length] <= _suspiciousSize) {
+        if ([assetData length] <= self.suspiciousSize) {
             [self p_fetchAssetDataForAsset:asset completionBlock:openCompletionBlock];
         } else {
             openCompletionBlock(assetData, error);

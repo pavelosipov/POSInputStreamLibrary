@@ -447,6 +447,7 @@
 					"$(inherited)",
 				);
 				INFOPLIST_FILE = "POSInputStreamLibraryTests/POSInputStreamLibraryTests-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = xctest;
 			};
@@ -463,6 +464,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "POSInputStreamLibrary/POSInputStreamLibrary-Prefix.pch";
 				INFOPLIST_FILE = "POSInputStreamLibraryTests/POSInputStreamLibraryTests-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = xctest;
 			};

@@ -369,7 +369,7 @@ static void POSRunLoopPerformCallBack(void *info);
 
 - (void)unscheduleFromAllRunLoops {
     [self enumerateRunLoopsUsingBlock:^(CFRunLoopRef runLoop) {
-        CFMutableSetRef runLoopModesSet = (CFMutableSetRef)CFDictionaryGetValue(_runLoopsModes, runLoop);
+        CFMutableSetRef runLoopModesSet = (CFMutableSetRef)CFDictionaryGetValue(self->_runLoopsModes, runLoop);
         CFIndex runLoopModesCount = CFSetGetCount(runLoopModesSet);
         if (runLoopModesCount > 0) {
             CFTypeRef runLoopModes[runLoopModesCount];

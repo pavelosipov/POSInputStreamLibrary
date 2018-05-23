@@ -170,7 +170,7 @@ typedef NS_ENUM(int, ResetMode) {
     [lock lock];
     dispatch_async(self.openDispatchQueue ?: dispatch_get_main_queue(), ^{ @autoreleasepool {
         self.assetsLibrary = [ALAssetsLibrary new];
-        [_assetsLibrary pos_assetForURL:_assetURL resultBlock:^(ALAsset *asset, ALAssetsGroup *assetsGroup) {
+        [self->_assetsLibrary pos_assetForURL:self->_assetURL resultBlock:^(ALAsset *asset, ALAssetsGroup *assetsGroup) {
             ALAssetRepresentation *assetRepresentation = [asset defaultRepresentation];
             if (assetRepresentation) {
                 self.asset = asset;
@@ -178,23 +178,23 @@ typedef NS_ENUM(int, ResetMode) {
                 self.assetReader = (assetsGroup
                                     ? [POSFastAssetReader new]
                                     : [self p_assetReaderForAssetRepresentation:assetRepresentation]);
-                [_assetReader
+                [self->_assetReader
                  openAsset:assetRepresentation
-                 fromOffset:_readOffset
+                 fromOffset:self->_readOffset
                  completionHandler:^(POSLength assetSize, NSError *error) {
-                     if (error != nil || assetSize <= 0 || (_assetSize != 0 && _assetSize != assetSize)) {
-                         self.error = [NSError pos_assetOpenErrorWithURL:_assetURL reason:error];
+                     if (error != nil || assetSize <= 0 || (self->_assetSize != 0 && self->_assetSize != assetSize)) {
+                         self.error = [NSError pos_assetOpenErrorWithURL:self->_assetURL reason:error];
                      } else {
                          self.assetSize = assetSize;
                      }
                      [lock unlock];
                  }];
             } else {
-                self.error = [NSError pos_assetOpenErrorWithURL:_assetURL reason:nil];
+                self.error = [NSError pos_assetOpenErrorWithURL:self->_assetURL reason:nil];
                 [lock unlock];
             }
         } failureBlock:^(NSError *error) {
-            self.error = [NSError pos_assetOpenErrorWithURL:_assetURL reason:error];
+            self.error = [NSError pos_assetOpenErrorWithURL:self->_assetURL reason:error];
             [lock unlock];
         }];
     }});
